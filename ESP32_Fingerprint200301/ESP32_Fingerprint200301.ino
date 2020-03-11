@@ -32,12 +32,12 @@ HardwareSerial mySerial(2); //ESP32 Hardware Serial 2
 Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
 //************************************************************************
 /* Set these to your desired credentials. */
-const char *ssid = "netis";
-const char *password = "password";
-const char* device_token  = "314d76f01bb770a8";
+const char *ssid = "SSID";
+const char *password = "Password";
+const char* device_token  = "Device Token";
 //************************************************************************
 String getData, Link;
-String URL = "http://192.168.1.103/biometricattendance/getdata.php"; //computer IP or the server domain
+String URL = "http://YourComputerIP/biometricattendance/getdata.php"; //computer IP or the server domain
 //************************************************************************
 int FingerID = 0, t1, t2;                                  // The Fingerprint ID from the scanner 
 bool device_Mode = false;                           // Default Mode Enrollment
