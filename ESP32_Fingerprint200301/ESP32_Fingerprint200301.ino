@@ -37,7 +37,7 @@ const char *password = "Password";
 const char* device_token  = "Device Token";
 //************************************************************************
 String getData, Link;
-String URL = "http://YourComputerIP/biometricattendance/getdata.php"; //computer IP or the server domain
+String URL = "http://YourComputerIP/biometricattendancev2/getdata.php"; //computer IP or the server domain
 //************************************************************************
 int FingerID = 0, t1, t2;                                  // The Fingerprint ID from the scanner 
 bool device_Mode = false;                           // Default Mode Enrollment
