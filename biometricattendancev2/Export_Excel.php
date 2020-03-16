@@ -65,8 +65,22 @@ if(isset($_POST["To_Excel"])){
         $_SESSION['searchQuery'] .= " AND fingerprint_id='".$Finger_sel."'";
     }
     //Department filter
-    if ($_POST['dev_sel'] != 0) {
-        $dev_uid = $_POST['dev_sel'];
+    if ($_POST['dev_id'] != 0) {
+        $dev_id = $_POST['dev_id'];
+        $sql = "SELECT device_uid FROM devices WHERE id=?";
+        $result = mysqli_stmt_init($conn);
+        if (!mysqli_stmt_prepare($result, $sql)) {
+            echo "SQL_Error";
+            exit();
+        }
+        else{
+            mysqli_stmt_bind_param($result, "i", $dev_id);
+            mysqli_stmt_execute($result);
+            $resultl = mysqli_stmt_get_result($result);
+            if ($row = mysqli_fetch_assoc($resultl)) {
+                $dev_uid = $row['device_uid'];
+            }
+        }
         $_SESSION['searchQuery'] .= " AND device_uid='".$dev_uid."'";
     }
 
