@@ -72,7 +72,7 @@ if (isset($_GET['FingerID']) && isset($_GET['device_token'])) {
                                 //*****************************************************
                                 //Logout
                                 else{
-                                    $sql="UPDATE users_logs SET timeout=? WHERE fingerprint_id=? AND checkindate=?";
+                                    $sql="UPDATE users_logs SET timeout=?, fingerout=1 WHERE fingerprint_id=? AND checkindate=? AND fingerout=0";
                                     $result = mysqli_stmt_init($conn);
                                     if (!mysqli_stmt_prepare($result, $sql)) {
                                         echo "SQL_Error_insert_logout1";
