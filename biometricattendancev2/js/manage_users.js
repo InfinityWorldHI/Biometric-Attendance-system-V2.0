@@ -3,7 +3,7 @@ $(document).ready(function(){
   $(document).on('click', '.fingerid_add', function(){
 
     var fingerid = $('#fingerid').val();
-    var dev_uid = $('#dev_sel option:selected').val();
+    var dev_id = $('#dev_sel option:selected').val();
     
     $.ajax({
       url: 'manage_users_conf.php',
@@ -11,7 +11,7 @@ $(document).ready(function(){
       data: {
         'Add_fingerID': 1,
         'fingerid': fingerid,
-        'dev_uid': dev_uid,
+        'dev_id': dev_id,
       },
       success: function(response){
         if (response == "1") {
