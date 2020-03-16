@@ -26,8 +26,7 @@ if (!isset($_SESSION['Admin-name'])) {
 		    var scrollWidth = $('.tbl-content').width() - $('.tbl-content table').width();
 		    $('.tbl-header').css({'padding-right':scrollWidth});
 		}).resize();
-	</script>
-	<script>
+
 	  $(document).ready(function(){
 	  	  $.ajax({
 	        url: "manage_users_up.php"
@@ -52,7 +51,7 @@ if (!isset($_SESSION['Admin-name'])) {
 		<form enctype="multipart/form-data">
 			<fieldset>
 				<label for="Device"><b>User Department:</b></label>
-                    <select class="dev_sel" name="dev_sel" id="dev_sel" style="color: #000;">
+                    <select name="dev_sel" id="dev_sel" style="color: #000;">
                       <option value="0">All Departments</option>
                       <?php
                         require'connectDB.php';
@@ -66,7 +65,7 @@ if (!isset($_SESSION['Admin-name'])) {
                             $resultl = mysqli_stmt_get_result($result);
                             while ($row = mysqli_fetch_assoc($resultl)){
                       ?>
-                              <option value="<?php echo $row['device_uid'];?>"><?php echo $row['device_dep']; ?></option>
+                              <option value="<?php echo $row['id'];?>"><?php echo $row['device_dep']; ?></option>
                       <?php
                             }
                         }
