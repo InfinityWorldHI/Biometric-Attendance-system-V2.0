@@ -48,7 +48,6 @@ if (!isset($_SESSION['Admin-name'])) {
                 'select_date': 0,
             }
             }).done(function(data) {
-              $('#table_log').DataTable();
               $('#userslog').html(data);
             });
         },5000);
@@ -148,7 +147,7 @@ if (!isset($_SESSION['Admin-name'])) {
                             $resultl = mysqli_stmt_get_result($result);
                             while ($row = mysqli_fetch_assoc($resultl)){
                       ?>
-                              <option value="<?php echo $row['device_uid'];?>"><?php echo $row['device_dep']; ?></option>
+                              <option value="<?php echo $row['id'];?>"><?php echo $row['device_dep']; ?></option>
                       <?php
                             }
                         }
