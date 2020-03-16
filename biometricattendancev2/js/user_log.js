@@ -8,7 +8,7 @@ $(document).ready(function(){
     var time_sel_start = $('#time_sel_start').val();
     var time_sel_end = $('#time_sel_end').val();
     var fing_sel = $('#fing_sel option:selected').val();
-    var dev_uid = $('#dev_sel option:selected').val();
+    var dev_id = $('#dev_sel option:selected').val();
     
     $.ajax({
       url: 'user_log_up.php',
@@ -21,7 +21,7 @@ $(document).ready(function(){
         'time_sel_start': time_sel_start,
         'time_sel_end': time_sel_end,
         'fing_sel': fing_sel,
-        'dev_uid': dev_uid,
+        'dev_id': dev_id,
       },
       success: function(response){
 
@@ -43,7 +43,7 @@ $(document).ready(function(){
             'time_sel': time_sel,
             'time_sel_start': time_sel_start,
             'time_sel_end': time_sel_end,
-            'dev_uid': dev_uid,
+            'dev_id': dev_id,
             'fing_sel': fing_sel,
             'select_date': 0,
           }
