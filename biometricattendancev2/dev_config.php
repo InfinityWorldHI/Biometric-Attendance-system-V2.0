@@ -14,7 +14,7 @@ if (isset($_POST['dev_add'])) {
         echo '<p class="alert alert-danger">Please, Set the device department!!</p>';
     }
     else{
-        $token = random_bytes(8);
+        $token = random_bytes(4);
         $dev_token = bin2hex($token);
 
         $sql = "INSERT INTO devices (device_name, device_dep, device_uid, device_date) VALUES(?, ?, ?, CURDATE())";
