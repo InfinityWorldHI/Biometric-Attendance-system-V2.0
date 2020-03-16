@@ -4,7 +4,7 @@
   - Date:  29/02/2020
    -----------------------------------------------------------------------------
   This code was created by Electronics Tech channel for 
-  the Biometric attendance project with ESP32.
+  the Biometric attendance project with NodeMCU.
    ---------------------------------------------------------------------------*/
 //*******************************libraries********************************
 //NodeMCU--------------------------
@@ -23,7 +23,7 @@
 //Fingerprint scanner Pins
 #define Finger_Rx 14 //D5
 #define Finger_Tx 12 //D6
-// Declaration for SSD1306 display connected using software I2C
+// Declaration for SSD1306 display connected using software I2C pins are(22 SCL, 21 SDA)
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 #define OLED_RESET     0 // Reset pin # (or -1 if sharing Arduino reset pin)
@@ -39,11 +39,13 @@ const char *password = "Password";
 const char* device_token  = "Device Token";
 //************************************************************************
 String getData, Link;
-String URL = "https://yourWebsiteIP/biometricattendancev2/getdata.php"; //computer IP or the server domain
+String URL = "http://yourWebsiteIP/biometricattendancev2/getdata.php"; //computer IP or the server domain
 //************************************************************************
 int FingerID = 0, t1, t2;                                  // The Fingerprint ID from the scanner 
 bool device_Mode = false;                           // Default Mode Enrollment
+bool firstConnect = false;
 uint8_t id;
+unsigned long previousMillis = 0;
 //*************************Biometric Icons*********************************
 #define Wifi_start_width 54
 #define Wifi_start_height 49
@@ -497,9 +499,8 @@ const uint8_t PROGMEM FinPr_scan_bits[] = {
 };
 //************************************************************************
 void setup() {
-  delay(1000);
   Serial.begin(115200);
-  delay(100);
+  delay(1000);
   //-----------initiate OLED display-------------
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
     Serial.println(F("SSD1306 allocation failed"));
@@ -532,16 +533,22 @@ void setup() {
   finger.getTemplateCount();
   Serial.print("Sensor contains "); Serial.print(finger.templateCount); Serial.println(" templates");
   Serial.println("Waiting for valid finger...");
+  //Timers---------------------------------------
+  timer.setInterval(25000L, CheckMode);
+  t1 = timer.setInterval(10000L, ChecktoAddID);      //Set an internal timer every 10sec to check if there a new fingerprint in the website to add it.
+  t2 = timer.setInterval(15000L, ChecktoDeleteID);   //Set an internal timer every 15sec to check wheater there an ID to delete in the website.
   //---------------------------------------------
   CheckMode();
-  timer.setInterval(25000L, CheckMode);
 }
 //************************************************************************
 void loop() {
   timer.run();      //Keep the timer in the loop function in order to update the time as soon as possible
   //check if there's a connection to Wi-Fi or not
   if(!WiFi.isConnected()){
-    connectToWiFi();    //Retry to connect to Wi-Fi
+    if (millis() - previousMillis >= 10000) {
+      previousMillis = millis();
+      connectToWiFi();    //Retry to connect to Wi-Fi
+    }
   }
   CheckFingerprint();   //Check the sensor if the there a finger.
   delay(10);
@@ -718,6 +725,7 @@ void ChecktoDeleteID(){
       Serial.println(del_id);
       http.end();  //Close connection
       deleteFingerprint( del_id.toInt() );
+      delay(1000);
     }
     http.end();  //Close connection
   }
@@ -776,7 +784,7 @@ uint8_t deleteFingerprint( int id) {
 }
 //******************Check if there a Fingerprint ID to add******************
 void ChecktoAddID(){
-  Serial.println("Check to Add ID");
+//  Serial.println("Check to Add ID");
   if(WiFi.isConnected()){
     HTTPClient http;    //Declare object of class HTTPClient
     //GET Data
@@ -815,34 +823,38 @@ void CheckMode(){
     if (payload.substring(0, 4) == "mode") {
       String dev_mode = payload.substring(4);
       int devMode = dev_mode.toInt();
-      Serial.println(dev_mode);
+      if(!firstConnect){
+        device_Mode = devMode;
+        firstConnect = true;
+      }
+//      Serial.println(dev_mode);
       if(device_Mode && devMode){
-        Serial.println("Deivce Mode: Attandance");
         device_Mode = false;
-        timer.disable(t1);      //Set an internal timer every 10sec to check if there a new fingerprint in the website to add it.
-        timer.disable(t2);   //Set an internal timer every 15sec to check wheater there an ID to delete in the website.
+        timer.disable(t1);
+        timer.disable(t2);
+        Serial.println("Deivce Mode: Attandance");
       }
       else if(!device_Mode && !devMode){
-        Serial.println("Deivce Mode: Enrollment");
         device_Mode = true;
-        t1 = timer.setInterval(10000L, ChecktoAddID);      //Set an internal timer every 10sec to check if there a new fingerprint in the website to add it.
-        t2 = timer.setInterval(15000L, ChecktoDeleteID);   //Set an internal timer every 15sec to check wheater there an ID to delete in the website.
+        timer.enable(t1);
+        timer.enable(t2);
+        Serial.println("Deivce Mode: Enrollment");
       }
       http.end();  //Close connection
     }
     http.end();  //Close connection
   }
-  Serial.print("Number of Timers: ");
-  Serial.println(timer.getNumTimers());
+//  Serial.print("Number of Timers: ");
+//  Serial.println(timer.getNumTimers());
 }
 //******************Enroll a Finpgerprint ID*****************
 uint8_t getFingerprintEnroll() {
-
   int p = -1;
   display.clearDisplay();
   display.drawBitmap( 34, 0, FinPr_scan_bits, FinPr_scan_width, FinPr_scan_height, WHITE);
   display.display();
   while (p != FINGERPRINT_OK) {
+          
     p = finger.getImage();
     switch (p) {
     case FINGERPRINT_OK:
@@ -874,7 +886,6 @@ uint8_t getFingerprintEnroll() {
   }
 
   // OK success!
-
   p = finger.image2Tz(1);
   switch (p) {
     case FINGERPRINT_OK:
@@ -959,7 +970,10 @@ uint8_t getFingerprintEnroll() {
       display.display();
       break;
     case FINGERPRINT_IMAGEMESS:
-      Serial.println("Image too messy");
+      //Serial.println("Image too messy");
+      display.clearDisplay();
+      display.drawBitmap( 34, 0, FinPr_invalid_bits, FinPr_invalid_width, FinPr_invalid_height, WHITE);
+      display.display();
       return p;
     case FINGERPRINT_PACKETRECIEVEERR:
       Serial.println("Communication error");
@@ -985,13 +999,16 @@ uint8_t getFingerprintEnroll() {
     display.drawBitmap( 34, 0, FinPr_valid_bits, FinPr_valid_width, FinPr_valid_height, WHITE);
     display.display();
   } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
-    Serial.println("Communication error");
+      Serial.println("Communication error");
     return p;
   } else if (p == FINGERPRINT_ENROLLMISMATCH) {
-    Serial.println("Fingerprints did not match");
+      Serial.println("Fingerprints did not match");
+      display.clearDisplay();
+      display.drawBitmap( 34, 0, FinPr_invalid_bits, FinPr_invalid_width, FinPr_invalid_height, WHITE);
+      display.display();
     return p;
   } else {
-    Serial.println("Unknown error");
+      Serial.println("Unknown error");
     return p;
   }   
   
@@ -1038,7 +1055,8 @@ void confirmAdding(int id){
       display.setCursor(0,0);             // Start at top-left corner
       display.print(payload);
       display.display();
-      Serial.println(payload);      
+      Serial.println(payload);
+      delay(2000);
     }
     else{
       Serial.println("Error Confirm!!");      
@@ -1066,24 +1084,37 @@ void connectToWiFi(){
     display.drawBitmap( 73, 10, Wifi_start_bits, Wifi_start_width, Wifi_start_height, WHITE);
     display.display();
     
-    while (WiFi.status() != WL_CONNECTED) {
-      delay(500);
-      Serial.print(".");
+    uint32_t periodToConnect = 30000L;
+    for(uint32_t StartToConnect = millis(); (millis()-StartToConnect) < periodToConnect;){
+      if ( WiFi.status() != WL_CONNECTED ){
+        delay(500);
+        Serial.print(".");
+      } else{
+        break;
+      }
     }
-    Serial.println("");
-    Serial.println("Connected");
     
-    display.clearDisplay();
-    display.setTextSize(2);             // Normal 1:1 pixel scale
-    display.setTextColor(WHITE);        // Draw white text
-    display.setCursor(8, 0);             // Start at top-left corner
-    display.print(F("Connected \n"));
-    display.drawBitmap( 33, 15, Wifi_connected_bits, Wifi_connected_width, Wifi_connected_height, WHITE);
-    display.display();
-    
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());  //IP address assigned to your ESP
-    
+    if(WiFi.isConnected()){
+      Serial.println("");
+      Serial.println("Connected");
+      
+      display.clearDisplay();
+      display.setTextSize(2);             // Normal 1:1 pixel scale
+      display.setTextColor(WHITE);        // Draw white text
+      display.setCursor(8, 0);             // Start at top-left corner
+      display.print(F("Connected \n"));
+      display.drawBitmap( 33, 15, Wifi_connected_bits, Wifi_connected_width, Wifi_connected_height, WHITE);
+      display.display();
+      
+      Serial.print("IP address: ");
+      Serial.println(WiFi.localIP());  //IP address assigned to your ESP
+    }
+    else{
+      Serial.println("");
+      Serial.println("Not Connected");
+      WiFi.mode(WIFI_OFF);
+      delay(1000);
+    }
     delay(1000);
 }
 //=======================================================================
