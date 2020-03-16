@@ -37,7 +37,7 @@ const char *password = "Password";
 const char* device_token  = "Device Token";
 //************************************************************************
 String getData, Link;
-String URL = "http://YourComputerIP/biometricattendancev2/getdata.php"; //computer IP or the server domain
+String URL = "http://yourWebsiteIP/biometricattendancev2/getdata.php"; //computer IP or the server domain
 //************************************************************************
 int FingerID = 0, t1, t2;                                  // The Fingerprint ID from the scanner 
 bool device_Mode = false;                           // Default Mode Enrollment
@@ -498,7 +498,7 @@ const uint8_t PROGMEM FinPr_scan_bits[] = {
 //************************************************************************
 void setup() {
   Serial.begin(115200);
-  delay(100);
+  delay(1000);
   //-----------initiate OLED display-------------
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
     Serial.println(F("SSD1306 allocation failed"));
@@ -543,7 +543,10 @@ void loop() {
   timer.run();      //Keep the timer in the loop function in order to update the time as soon as possible
   //check if there's a connection to Wi-Fi or not
   if(!WiFi.isConnected()){
-    connectToWiFi();    //Retry to connect to Wi-Fi
+    if (millis() - previousMillis >= 10000) {
+      previousMillis = millis();
+      connectToWiFi();    //Retry to connect to Wi-Fi
+    }
   }
   CheckFingerprint();   //Check the sensor if the there a finger.
   delay(10);
@@ -593,7 +596,7 @@ void DisplayFingerprintID(){
 }
 //************send the fingerprint ID to the website*************
 void SendFingerprintID( int finger ){
-//  Serial.println("Sending the Fingerprint ID");
+  Serial.println("Sending the Fingerprint ID");
   if(WiFi.isConnected()){
     HTTPClient http;    //Declare object of class HTTPClient
     //GET Data
@@ -803,7 +806,7 @@ void ChecktoAddID(){
 }
 //******************Check the Mode*****************
 void CheckMode(){
-//  Serial.println("Check Mode");
+  Serial.println("Check Mode");
   if(WiFi.isConnected()){
     HTTPClient http;    //Declare object of class HTTPClient
     //GET Data
@@ -844,23 +847,16 @@ void CheckMode(){
 }
 //******************Enroll a Finpgerprint ID*****************
 uint8_t getFingerprintEnroll() {
-  bool scanFinger;
   int p = -1;
   display.clearDisplay();
   display.drawBitmap( 34, 0, FinPr_scan_bits, FinPr_scan_width, FinPr_scan_height, WHITE);
   display.display();
   while (p != FINGERPRINT_OK) {
-    if(millis() - previousMillis >= 15000) {
-      previousMillis = millis();
-      scanFinger = false;
-      break;
-    }
       
     p = finger.getImage();
     switch (p) {
     case FINGERPRINT_OK:
       //Serial.println("Image taken");
-      scanFinger = true;
       display.clearDisplay();
       display.drawBitmap( 34, 0, FinPr_valid_bits, FinPr_valid_width, FinPr_valid_height, WHITE);
       display.display();
@@ -887,165 +883,159 @@ uint8_t getFingerprintEnroll() {
     }
   }
   
-  if(scanFinger){
-    // OK success!
-    p = finger.image2Tz(1);
-    switch (p) {
-      case FINGERPRINT_OK:
-        display.clearDisplay();
-        display.drawBitmap( 34, 0, FinPr_valid_bits, FinPr_valid_width, FinPr_valid_height, WHITE);
-        display.display();
-        break;
-      case FINGERPRINT_IMAGEMESS:
-        display.clearDisplay();
-        display.drawBitmap( 34, 0, FinPr_invalid_bits, FinPr_invalid_width, FinPr_invalid_height, WHITE);
-        display.display();
-        return p;
-      case FINGERPRINT_PACKETRECIEVEERR:
-        Serial.println("Communication error");
-        return p;
-      case FINGERPRINT_FEATUREFAIL:
-        Serial.println("Could not find fingerprint features");
-        return p;
-      case FINGERPRINT_INVALIDIMAGE:
-        Serial.println("Could not find fingerprint features");
-        return p;
-      default:
-        Serial.println("Unknown error");
-        return p;
-    }
-    display.clearDisplay();
-    display.setTextSize(2);             // Normal 2:2 pixel scale
-    display.setTextColor(WHITE);        // Draw white text
-    display.setCursor(0,0);             // Start at top-left corner
-    display.print(F("Remove"));
-    display.setCursor(0,20);
-    display.print(F("finger"));
-    display.display();
-    //Serial.println("Remove finger");
-    delay(2000);
-    p = 0;
-    while (p != FINGERPRINT_NOFINGER) {
-      p = finger.getImage();
-    }
-    Serial.print("ID "); Serial.println(id);
-    p = -1;
-    display.clearDisplay();
-    display.drawBitmap( 34, 0, FinPr_scan_bits, FinPr_scan_width, FinPr_scan_height, WHITE);
-    display.display();
-    while (p != FINGERPRINT_OK) {
-      if(millis() - previousMillis >= 15000) {
-        previousMillis = millis();
-        scanFinger = false;
-        break;
-      }
-      p = finger.getImage();
-      switch (p) {
-      case FINGERPRINT_OK:
-        //Serial.println("Image taken");
-        display.clearDisplay();
-        display.drawBitmap( 34, 0, FinPr_valid_bits, FinPr_valid_width, FinPr_valid_height, WHITE);
-        display.display();
-        break;
-      case FINGERPRINT_NOFINGER:
-        //Serial.println(".");
-        display.setTextSize(1);             // Normal 2:2 pixel scale
-        display.setTextColor(WHITE);        // Draw white text
-        display.setCursor(0,0);             // Start at top-left corner
-        display.print(F("scanning"));
-        display.display();
-        break;
-      case FINGERPRINT_PACKETRECIEVEERR:
-        Serial.println("Communication error");
-        break;
-      case FINGERPRINT_IMAGEFAIL:
-        Serial.println("Imaging error");
-        break;
-      default:
-        Serial.println("Unknown error");
-        break;
-      }
-    }
-  
-    // OK success!
-  
-    p = finger.image2Tz(2);
-    switch (p) {
-      case FINGERPRINT_OK:
-        //Serial.println("Image converted");
-        display.clearDisplay();
-        display.drawBitmap( 34, 0, FinPr_valid_bits, FinPr_valid_width, FinPr_valid_height, WHITE);
-        display.display();
-        break;
-      case FINGERPRINT_IMAGEMESS:
-        //Serial.println("Image too messy");
-        display.clearDisplay();
-        display.drawBitmap( 34, 0, FinPr_invalid_bits, FinPr_invalid_width, FinPr_invalid_height, WHITE);
-        display.display();
-        return p;
-      case FINGERPRINT_PACKETRECIEVEERR:
-        Serial.println("Communication error");
-        return p;
-      case FINGERPRINT_FEATUREFAIL:
-        Serial.println("Could not find fingerprint features");
-        return p;
-      case FINGERPRINT_INVALIDIMAGE:
-        Serial.println("Could not find fingerprint features");
-        return p;
-      default:
-        Serial.println("Unknown error");
-        return p;
-    }
-    
-    // OK converted!
-    Serial.print("Creating model for #");  Serial.println(id);
-    
-    p = finger.createModel();
-    if (p == FINGERPRINT_OK) {
-      Serial.println("Prints matched!");
+  // OK success!
+  p = finger.image2Tz(1);
+  switch (p) {
+    case FINGERPRINT_OK:
       display.clearDisplay();
       display.drawBitmap( 34, 0, FinPr_valid_bits, FinPr_valid_width, FinPr_valid_height, WHITE);
       display.display();
-    } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
-        Serial.println("Communication error");
-      return p;
-    } else if (p == FINGERPRINT_ENROLLMISMATCH) {
-        Serial.println("Fingerprints did not match");
-        display.clearDisplay();
-        display.drawBitmap( 34, 0, FinPr_invalid_bits, FinPr_invalid_width, FinPr_invalid_height, WHITE);
-        display.display();
-      return p;
-    } else {
-        Serial.println("Unknown error");
-      return p;
-    }   
-    
-    Serial.print("ID "); Serial.println(id);
-    p = finger.storeModel(id);
-    if (p == FINGERPRINT_OK) {
-      Serial.println("Stored!");
+      break;
+    case FINGERPRINT_IMAGEMESS:
       display.clearDisplay();
-      display.drawBitmap( 34, 0, FinPr_valid_bits, FinPr_valid_width, FinPr_valid_height, WHITE);
+      display.drawBitmap( 34, 0, FinPr_invalid_bits, FinPr_invalid_width, FinPr_invalid_height, WHITE);
       display.display();
-      confirmAdding(id);
-    } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
+      return p;
+    case FINGERPRINT_PACKETRECIEVEERR:
       Serial.println("Communication error");
       return p;
-    } else if (p == FINGERPRINT_BADLOCATION) {
-      Serial.println("Could not store in that location");
+    case FINGERPRINT_FEATUREFAIL:
+      Serial.println("Could not find fingerprint features");
       return p;
-    } else if (p == FINGERPRINT_FLASHERR) {
-      Serial.println("Error writing to flash");
+    case FINGERPRINT_INVALIDIMAGE:
+      Serial.println("Could not find fingerprint features");
       return p;
-    } else {
+    default:
       Serial.println("Unknown error");
       return p;
-    }   
   }
+  display.clearDisplay();
+  display.setTextSize(2);             // Normal 2:2 pixel scale
+  display.setTextColor(WHITE);        // Draw white text
+  display.setCursor(0,0);             // Start at top-left corner
+  display.print(F("Remove"));
+  display.setCursor(0,20);
+  display.print(F("finger"));
+  display.display();
+  //Serial.println("Remove finger");
+  delay(2000);
+  p = 0;
+  while (p != FINGERPRINT_NOFINGER) {
+    p = finger.getImage();
+  }
+  Serial.print("ID "); Serial.println(id);
+  p = -1;
+  display.clearDisplay();
+  display.drawBitmap( 34, 0, FinPr_scan_bits, FinPr_scan_width, FinPr_scan_height, WHITE);
+  display.display();
+  while (p != FINGERPRINT_OK) {
+    
+    p = finger.getImage();
+    switch (p) {
+    case FINGERPRINT_OK:
+      //Serial.println("Image taken");
+      display.clearDisplay();
+      display.drawBitmap( 34, 0, FinPr_valid_bits, FinPr_valid_width, FinPr_valid_height, WHITE);
+      display.display();
+      break;
+    case FINGERPRINT_NOFINGER:
+      //Serial.println(".");
+      display.setTextSize(1);             // Normal 2:2 pixel scale
+      display.setTextColor(WHITE);        // Draw white text
+      display.setCursor(0,0);             // Start at top-left corner
+      display.print(F("scanning"));
+      display.display();
+      break;
+    case FINGERPRINT_PACKETRECIEVEERR:
+      Serial.println("Communication error");
+      break;
+    case FINGERPRINT_IMAGEFAIL:
+      Serial.println("Imaging error");
+      break;
+    default:
+      Serial.println("Unknown error");
+      break;
+    }
+  }
+
+  // OK success!
+
+  p = finger.image2Tz(2);
+  switch (p) {
+    case FINGERPRINT_OK:
+      //Serial.println("Image converted");
+      display.clearDisplay();
+      display.drawBitmap( 34, 0, FinPr_valid_bits, FinPr_valid_width, FinPr_valid_height, WHITE);
+      display.display();
+      break;
+    case FINGERPRINT_IMAGEMESS:
+      //Serial.println("Image too messy");
+      display.clearDisplay();
+      display.drawBitmap( 34, 0, FinPr_invalid_bits, FinPr_invalid_width, FinPr_invalid_height, WHITE);
+      display.display();
+      return p;
+    case FINGERPRINT_PACKETRECIEVEERR:
+      Serial.println("Communication error");
+      return p;
+    case FINGERPRINT_FEATUREFAIL:
+      Serial.println("Could not find fingerprint features");
+      return p;
+    case FINGERPRINT_INVALIDIMAGE:
+      Serial.println("Could not find fingerprint features");
+      return p;
+    default:
+      Serial.println("Unknown error");
+      return p;
+  }
+  
+  // OK converted!
+  Serial.print("Creating model for #");  Serial.println(id);
+  
+  p = finger.createModel();
+  if (p == FINGERPRINT_OK) {
+    Serial.println("Prints matched!");
+    display.clearDisplay();
+    display.drawBitmap( 34, 0, FinPr_valid_bits, FinPr_valid_width, FinPr_valid_height, WHITE);
+    display.display();
+  } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
+      Serial.println("Communication error");
+    return p;
+  } else if (p == FINGERPRINT_ENROLLMISMATCH) {
+      Serial.println("Fingerprints did not match");
+      display.clearDisplay();
+      display.drawBitmap( 34, 0, FinPr_invalid_bits, FinPr_invalid_width, FinPr_invalid_height, WHITE);
+      display.display();
+    return p;
+  } else {
+      Serial.println("Unknown error");
+    return p;
+  }   
+  
+  Serial.print("ID "); Serial.println(id);
+  p = finger.storeModel(id);
+  if (p == FINGERPRINT_OK) {
+    Serial.println("Stored!");
+    display.clearDisplay();
+    display.drawBitmap( 34, 0, FinPr_valid_bits, FinPr_valid_width, FinPr_valid_height, WHITE);
+    display.display();
+    confirmAdding(id);
+  } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
+    Serial.println("Communication error");
+    return p;
+  } else if (p == FINGERPRINT_BADLOCATION) {
+    Serial.println("Could not store in that location");
+    return p;
+  } else if (p == FINGERPRINT_FLASHERR) {
+    Serial.println("Error writing to flash");
+    return p;
+  } else {
+    Serial.println("Unknown error");
+    return p;
+  }   
 }
 //******************Check if there a Fingerprint ID to add******************
 void confirmAdding(int id){
-//  Serial.println("confirm Adding");
+  Serial.println("confirm Adding");
   if(WiFi.status() == WL_CONNECTED){
     HTTPClient http;    //Declare object of class HTTPClient
     //GET Data
@@ -1093,24 +1083,37 @@ void connectToWiFi(){
     display.drawBitmap( 73, 10, Wifi_start_bits, Wifi_start_width, Wifi_start_height, WHITE);
     display.display();
     
-    while (WiFi.status() != WL_CONNECTED) {
-      delay(500);
-      Serial.print(".");
+    uint32_t periodToConnect = 30000L;
+    for(uint32_t StartToConnect = millis(); (millis()-StartToConnect) < periodToConnect;){
+      if ( WiFi.status() != WL_CONNECTED ){
+        delay(500);
+        Serial.print(".");
+      } else{
+        break;
+      }
     }
-    Serial.println("");
-    Serial.println("Connected");
     
-    display.clearDisplay();
-    display.setTextSize(2);             // Normal 1:1 pixel scale
-    display.setTextColor(WHITE);        // Draw white text
-    display.setCursor(8, 0);             // Start at top-left corner
-    display.print(F("Connected \n"));
-    display.drawBitmap( 33, 15, Wifi_connected_bits, Wifi_connected_width, Wifi_connected_height, WHITE);
-    display.display();
-    
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());  //IP address assigned to your ESP
-    
+    if(WiFi.isConnected()){
+      Serial.println("");
+      Serial.println("Connected");
+      
+      display.clearDisplay();
+      display.setTextSize(2);             // Normal 1:1 pixel scale
+      display.setTextColor(WHITE);        // Draw white text
+      display.setCursor(8, 0);             // Start at top-left corner
+      display.print(F("Connected \n"));
+      display.drawBitmap( 33, 15, Wifi_connected_bits, Wifi_connected_width, Wifi_connected_height, WHITE);
+      display.display();
+      
+      Serial.print("IP address: ");
+      Serial.println(WiFi.localIP());  //IP address assigned to your ESP
+    }
+    else{
+      Serial.println("");
+      Serial.println("Not Connected");
+      WiFi.mode(WIFI_OFF);
+      delay(1000);
+    }
     delay(1000);
 }
 //=======================================================================
