@@ -6,7 +6,7 @@ require'connectDB.php';
 if (isset($_POST['Add_fingerID'])) {
 
     $fingerid = $_POST['fingerid'];
-    $dev_uid = $_POST['dev_uid'];
+    $dev_uid = $_POST['dev_id'];
 
     if ($fingerid == 0) {
         echo "Enter a Fingerprint ID!";
@@ -18,18 +18,19 @@ if (isset($_POST['Add_fingerID'])) {
     }
     else{
         if ($fingerid > 0 && $fingerid < 128) {
-            $sql = "SELECT device_dep FROM devices WHERE device_uid=?";
+            $sql = "SELECT * FROM devices WHERE id=?";
             $result = mysqli_stmt_init($conn);
             if (!mysqli_stmt_prepare($result, $sql)) {
                 echo "SQL_Error";
                 exit();
             }
             else{
-                mysqli_stmt_bind_param($result, "s", $dev_uid);
+                mysqli_stmt_bind_param($result, "i", $dev_uid);
                 mysqli_stmt_execute($result);
                 $resultl = mysqli_stmt_get_result($result);
                 if ($row = mysqli_fetch_assoc($resultl)) {
                     $dev_name = $row['device_dep'];
+                    $dev_uid = $row['device_uid'];
                 }
             }
             $sql = "SELECT fingerprint_id FROM users WHERE fingerprint_id=? AND device_uid=?";
