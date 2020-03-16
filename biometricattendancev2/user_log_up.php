@@ -80,8 +80,22 @@ session_start();
               $_SESSION['searchQuery'] .= " AND fingerprint_id='".$Finger_sel."'";
           }
           //Department filter
-          if ($_POST['dev_uid'] != 0) {
-              $dev_uid = $_POST['dev_uid'];
+          if ($_POST['dev_id'] != 0) {
+              $dev_id = $_POST['dev_id'];
+              $sql = "SELECT device_uid FROM devices WHERE id=?";
+              $result = mysqli_stmt_init($conn);
+              if (!mysqli_stmt_prepare($result, $sql)) {
+                  echo "SQL_Error";
+                  exit();
+              }
+              else{
+                  mysqli_stmt_bind_param($result, "i", $dev_id);
+                  mysqli_stmt_execute($result);
+                  $resultl = mysqli_stmt_get_result($result);
+                  if ($row = mysqli_fetch_assoc($resultl)) {
+                      $dev_uid = $row['device_uid'];
+                  }
+              }
               $_SESSION['searchQuery'] .= " AND device_uid='".$dev_uid."'";
           }
         }
@@ -90,7 +104,7 @@ session_start();
             $Start_date = date("Y-m-d");
             $_SESSION['searchQuery'] = "checkindate='".$Start_date."'";
         }
-
+        // echo $_SESSION['searchQuery'];
         // $sql = "SELECT * FROM users_logs WHERE checkindate=? AND pic_date BETWEEN ? AND ? ORDER BY id ASC";
         $sql = "SELECT * FROM users_logs WHERE ".$_SESSION['searchQuery']." ORDER BY id DESC";
         $result = mysqli_stmt_init($conn);
