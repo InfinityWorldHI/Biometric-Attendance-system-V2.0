@@ -107,7 +107,8 @@ CREATE TABLE `users_logs` (
   `device_dep` varchar(20) NOT NULL,
   `checkindate` date NOT NULL,
   `timein` time NOT NULL,
-  `timeout` time NOT NULL
+  `timeout` time NOT NULL,
+  `fingerout` tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
